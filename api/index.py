@@ -6,7 +6,6 @@ import os
 
 app = FastAPI()
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,12 +13,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Simple model
 class Message(BaseModel):
     text: str
     user_id: str = "jarvis"
 
-# Check OpenAI
 OPENAI_KEY = os.getenv('OPENAI_API_KEY')
 
 @app.get("/")
@@ -40,7 +37,6 @@ def test():
 
 @app.post("/siri/chat")
 def siri_chat(message: Message):
-    # Simple response for now
     return {
         "response": f"Hey! I got your message: {message.text}",
         "user_id": message.user_id
@@ -50,5 +46,4 @@ def siri_chat(message: Message):
 def chat(message: Message):
     return siri_chat(message)
 
-# Vercel handler
 handler = Mangum(app)
