@@ -161,7 +161,12 @@ class handler(BaseHTTPRequestHandler):
         
         # 5:30 PM UAE - PROTEIN CHECK
         elif hour == 17 and minute == 30:
-            return "Did you take your protein? 5:30 PM check. If not, take it now! Also start wrapping up your work."
+            messages = [
+                "Hey! Did you take your protein? I reminded you at 5, just following up. Please let me know, my boy!",
+                "Quick check! Did you grab that protein shake? I mentioned it at 5 PM. Just making sure you didn't forget, my boy!",
+                "Hey my boy! Just checking in. Did you take your protein? I reminded you 30 minutes ago. Don't skip it!"
+            ]
+            return random.choice(messages)
         
         # ⭐ 6:00 PM UAE - LOGOUT + GYM REMINDER
         elif hour == 18 and minute == 0:
