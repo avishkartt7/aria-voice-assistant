@@ -25,11 +25,12 @@ class handler(BaseHTTPRequestHandler):
                 },
                 "schedule": {
                     "lunch": "12:00 PM UAE",
-                    "breaks": "2:00 PM & 3:00 PM UAE",
+                    "break_1": "2:00 PM UAE",
+                    "server_check": "2:30 PM UAE",
+                    "break_2": "3:00 PM UAE",
                     "protein": "4:00 PM UAE",
                     "logout": "5:00 PM UAE",
-                    "gym": "6:00 PM UAE",
-                    "evening": "9:00 PM UAE"
+                    "gym": "6:00 PM UAE"
                 }
             }
             
@@ -50,7 +51,10 @@ class handler(BaseHTTPRequestHandler):
             minute = uae_time.minute
             current_time_str = uae_time.strftime("%I:%M %p")
             
-            message = self.get_scheduled_message(hour, minute)
+            # Get server status
+            server_status = self.check_server_status()
+            
+            message = self.get_scheduled_message(hour, minute, server_status)
             
             response = {
                 "time": f"{hour:02d}:{minute:02d}",
@@ -60,7 +64,11 @@ class handler(BaseHTTPRequestHandler):
                 "minute": minute,
                 "timezone": "Asia/Dubai",
                 "utc_offset": "+04:00",
-                "is_uae_time": True
+                "server_check": {
+                    "github": server_status.get("github", "unknown"),
+                    "vercel": server_status.get("vercel", "unknown"),
+                    "timestamp": datetime.now().isoformat()
+                }
             }
             
             self.wfile.write(json.dumps(response).encode())
@@ -70,7 +78,38 @@ class handler(BaseHTTPRequestHandler):
         self.send_response(404)
         self.end_headers()
     
-    def get_scheduled_message(self, hour, minute):
+    def check_server_status(self):
+        """Check if servers are responding"""
+        import urllib.request
+        import ssl
+        
+        status = {}
+        
+        # Check GitHub
+        try:
+            req = urllib.request.Request(
+                'https://api.github.com',
+                headers={'User-Agent': 'Jarvis-Assistant'}
+            )
+            urllib.request.urlopen(req, timeout=3)
+            status["github"] = "✅ Online"
+        except:
+            status["github"] = "❌ Offline"
+        
+        # Check Vercel (your own server)
+        try:
+            req = urllib.request.Request(
+                'https://aria-voice-assistant.vercel.app/',
+                headers={'User-Agent': 'Jarvis-Assistant'}
+            )
+            urllib.request.urlopen(req, timeout=3)
+            status["vercel"] = "✅ Online"
+        except:
+            status["vercel"] = "❌ Offline"
+        
+        return status
+    
+    def get_scheduled_message(self, hour, minute, server_status=None):
         """Generate messages based on UAE timezone schedule"""
         
         # 12:00 PM UAE - LUNCH TIME
@@ -83,11 +122,26 @@ class handler(BaseHTTPRequestHandler):
         
         # 1:00 PM UAE - BACK FROM LUNCH
         elif hour == 13 and minute == 0:
-            return "Back to work! First work hour begins now at 1:00 PM UAE time. I'll remind you to take breaks every hour."
+            return "Back to work! First work hour begins now at 1:00 PM UAE time. I'll remind you to take breaks."
         
         # 2:00 PM UAE - 1st BREAK REMINDER
         elif hour == 14 and minute == 0:
             return "⏰ BREAK TIME! You've worked 1 hour. Take 5 minutes - stretch your legs, look away from screen, or walk around."
+        
+        # 2:30 PM UAE - SERVER CHECK + BREAK REMINDER ⭐ NEW!
+        elif hour == 14 and minute == 30:
+            server_msg = ""
+            if server_status:
+                github_status = server_status.get("github", "❓")
+                vercel_status = server_status.get("vercel", "❓")
+                server_msg = f" Server status: GitHub {github_status}, Vercel {vercel_status}."
+            
+            messages = [
+                f"🔧 2:30 PM UAE - Server check complete.{server_msg} Have you taken your break yet? If not, stand up and walk for 2 minutes!",
+                f"⏰ 2:30 PM UAE - Break check!{server_msg} Did you take your 5-minute break? Time to drink some water! 💧",
+                f"✅ 2:30 PM UAE - Systems check.{server_msg} Remember: Micro-breaks improve productivity! Look away from screen for 60 seconds."
+            ]
+            return random.choice(messages)
         
         # 3:00 PM UAE - 2nd BREAK REMINDER
         elif hour == 15 and minute == 0:
@@ -138,6 +192,7 @@ class handler(BaseHTTPRequestHandler):
                 (12, 30, "12:30 PM - Lunch Check"),
                 (13, 0, "1:00 PM - Back to Work"),
                 (14, 0, "2:00 PM - 1st Break"),
+                (14, 30, "2:30 PM - Server Check"),  # ⭐ NEW!
                 (15, 0, "3:00 PM - 2nd Break"),
                 (16, 0, "4:00 PM - Protein Time"),
                 (16, 30, "4:30 PM - Protein Reminder"),
@@ -208,6 +263,13 @@ class handler(BaseHTTPRequestHandler):
     def generate_chat_response(self, text, hour, minute, current_time):
         """Generate intelligent chat responses with UAE time context"""
         
+        # Server check command
+        if any(word in text for word in ["server", "status", "check server", "github", "vercel"]):
+            status = self.check_server_status()
+            github = status.get("github", "❓")
+            vercel = status.get("vercel", "❓")
+            return f"Server status at {current_time} UAE: GitHub {github}, Vercel {vercel}. All systems operational!"
+        
         # Greetings
         if any(word in text for word in ["hello", "hi", "hey", "jarvis"]):
             greetings = [
@@ -219,11 +281,12 @@ class handler(BaseHTTPRequestHandler):
         
         # Time queries
         elif any(word in text for word in ["time", "clock", "what time"]):
-            return f"Current UAE (Dubai) time is {current_time}. Your next scheduled message is at {self.get_next_schedule(hour, minute)}."
+            next_sched = self.get_next_schedule(hour, minute)
+            return f"Current UAE (Dubai) time is {current_time}. Your next scheduled message is at {next_sched}."
         
         # Schedule queries
         elif any(word in text for word in ["schedule", "reminder", "today plan", "agenda"]):
-            return "Your UAE schedule: Lunch 12:00 PM, Breaks 2:00 PM & 3:00 PM, Protein 4:00 PM, Logout 5:00 PM, Gym 6:00 PM, Evening 9:00 PM"
+            return "Your UAE schedule: Lunch 12:00 PM, Breaks 2:00 PM & 3:00 PM, Server Check 2:30 PM, Protein 4:00 PM, Logout 5:00 PM, Gym 6:00 PM, Evening 9:00 PM"
         
         # Next reminder
         elif any(word in text for word in ["next", "when", "upcoming"]):
@@ -232,7 +295,7 @@ class handler(BaseHTTPRequestHandler):
         
         # Help
         elif any(word in text for word in ["help", "what can you do", "feature"]):
-            return "I'm Jarvis! I manage your daily schedule in UAE time, give reminders for lunch, breaks, protein, gym, and more. Try asking 'what time is it?' or 'what's my schedule?'"
+            return "I'm Jarvis! I manage your daily schedule in UAE time, give reminders for lunch, breaks, server checks, protein, gym, and more. Try asking 'server status' or 'what's my schedule?'"
         
         # Default response
         else:
@@ -250,6 +313,7 @@ class handler(BaseHTTPRequestHandler):
             (12, 30, "12:30 PM"),
             (13, 0, "1:00 PM"),
             (14, 0, "2:00 PM"),
+            (14, 30, "2:30 PM"),  # ⭐ NEW!
             (15, 0, "3:00 PM"),
             (16, 0, "4:00 PM"),
             (16, 30, "4:30 PM"),
