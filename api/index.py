@@ -3,7 +3,8 @@ import json
 import os
 from datetime import datetime
 import random
-
+from datetime import datetime, timezone, timedelta
+import pytz  # You'll need to add this package
 class handler(BaseHTTPRequestHandler):
     
     def do_GET(self):
@@ -44,7 +45,7 @@ class handler(BaseHTTPRequestHandler):
                     "chat": "/siri/chat",
                     "auto_talk": "/auto-talk"
                 }
-            }
+            }   
             
             self.wfile.write(json.dumps(response).encode())
             return
@@ -53,58 +54,64 @@ class handler(BaseHTTPRequestHandler):
         self.end_headers()
     
     def get_scheduled_message(self, hour, minute):
-        """Your exact schedule"""
+        """Your schedule - NOW WITH TIMEZONE SUPPORT"""
         
-        # 12:00 PM - LUNCH TIME
+        # Set your timezone (Asia/Kolkata = India)
+        india_tz = pytz.timezone('Asia/Kolkata')
+        india_time = datetime.now(india_tz)
+        hour = india_time.hour
+        minute = india_time.minute
+        
+        # Your schedule in IST (India Time)
+        # 12:00 PM IST - LUNCH TIME
         if hour == 12 and minute == 0:
-            return "🚨 Lunch Time! It's 12 PM. Take a break and eat properly. Remember to hydrate!"
+            return "🍽️ Lunch Time! It's 12 PM. Take a break and eat properly..."
         
-        # 12:30 PM - LUNCH CHECK
+        # 12:30 PM IST - LUNCH CHECK
         if hour == 12 and minute == 30:
-            return "How's your lunch going? You should take at least 30 minutes break from work."
+            return "How's your lunch going? Take at least 30 minutes..."
         
-        # 1:00 PM - BACK FROM LUNCH
+        # 1:00 PM IST - BACK FROM LUNCH
         if hour == 13 and minute == 0:
-            return "Back to work! First hour begins now. I'll remind you to take breaks."
+            return "Back to work! First hour begins now..."
         
-        # 2:00 PM - 1st BREAK REMINDER
+        # 2:00 PM IST - 1st BREAK
         if hour == 14 and minute == 0:
-            return "⏰ Break Time! You've worked 1 hour. Take 5 minutes - stretch or walk around."
+            return "⏰ Break Time! You've worked 1 hour..."
         
-        # 3:00 PM - 2nd BREAK REMINDER  
+        # 3:00 PM IST - 2nd BREAK  
         if hour == 15 and minute == 0:
-            return "⏰ Break Time! 2 hours done. Look away from screen for 5 minutes."
+            return "⏰ Break Time! 2 hours done..."
         
-        # 4:00 PM - PROTEIN TIME
+        # 4:00 PM IST - PROTEIN TIME
         if hour == 16 and minute == 0:
-            return "💪 PROTEIN TIME! It's 4 PM. Have you taken your protein shake? Should I set alarm for 5 PM if not?"
+            return "💪 PROTEIN TIME! It's 4 PM. Protein shake?"
         
-        # 4:30 PM - PROTEIN REMINDER
+        # 4:30 PM IST - PROTEIN REMINDER
         if hour == 16 and minute == 30:
-            return "Reminder: Don't skip protein! Good for muscle recovery."
+            return "Reminder: Don't skip protein!"
         
-        # 5:00 PM - LOGOUT TIME
+        # 5:00 PM IST - LOGOUT TIME
         if hour == 17 and minute == 0:
-            return "🏠 LOGOUT TIME! It's 5 PM. Start wrapping up your work."
+            return "🏠 LOGOUT TIME! It's 5 PM..."
         
-        # 5:30 PM - GO HOME TIME
+        # 5:30 PM IST - GO HOME
         if hour == 17 and minute == 30:
-            return "You should be leaving office now! Go home and prepare for gym."
+            return "You should be leaving office now!"
         
-        # 6:00 PM - GYM TIME
+        # 6:00 PM IST - GYM TIME
         if hour == 18 and minute == 0:
-            return "🏋️ GYM TIME! It's 6 PM. Time to hit the gym! Don't skip workout."
+            return "🏋️ GYM TIME! It's 6 PM..."
         
-        # 6:30 PM - GYM CHECK
+        # 6:30 PM IST - GYM CHECK
         if hour == 18 and minute == 30:
-            return "Are you at the gym? Complete your workout properly!"
+            return "Are you at the gym?"
         
-        # 9:00 PM - EVENING CHECK
+        # 9:00 PM IST - EVENING CHECK
         if hour == 21 and minute == 0:
-            return "Evening check! Plan tomorrow and get good sleep."
+            return "Evening check! Plan tomorrow..."
         
-        # Default message for testing
-        return f"Jarvis check at {hour:02d}:{minute:02d}. Your next scheduled message is coming up!"
+        return f"Jarvis check at {hour:02d}:{minute:02d} IST. Next scheduled message coming up!"
     
     # KEEP YOUR EXISTING do_POST METHOD (for chat)
     def do_POST(self):
