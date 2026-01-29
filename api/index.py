@@ -125,7 +125,7 @@ class handler(BaseHTTPRequestHandler):
         
         # 2:00 PM UAE - 1st BREAK REMINDER
         elif hour == 14 and minute == 0:
-            return "Break time! You've worked 1 hour. Take 5 minutes. Stretch your legs, look away from screen, or walk around."
+            return "Break time! 2 hours done. Quick 5 minute eye break. Look at something 20 feet away for 20 seconds!"
         
         # 3:00 PM UAE - 2nd BREAK REMINDER
         elif hour == 15 and minute == 0:
